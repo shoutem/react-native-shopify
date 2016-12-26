@@ -24,10 +24,10 @@ RCT_EXPORT_METHOD(initialize:(NSString *)domain key:(NSString *)key)
 
 RCT_EXPORT_METHOD(getShop:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    
+
     [self.client getShop:^(BUYShop *shop, NSError *error) {
         if (shop && !error) {
-            resolve(shop);
+            resolve([shop JSONDictionary]);
         } else {
             reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
@@ -36,11 +36,11 @@ RCT_EXPORT_METHOD(getShop:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRe
 
 RCT_EXPORT_METHOD(getCollections:(NSUInteger)page resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    
+
     [self.client getCollectionsPage:page completion:^(NSArray<BUYCollection *> *collections, NSUInteger page, BOOL reachedEnd, NSError *error) {
         if (collections && !error) {
             NSMutableArray *collectionDictionaries = [NSMutableArray array];
-            
+
             for (BUYCollection *collection in collections) {
                 [collectionDictionaries addObject: @{@"title":collection.title,@"id":collection.identifier}];
             }
@@ -53,7 +53,7 @@ RCT_EXPORT_METHOD(getCollections:(NSUInteger)page resolver:(RCTPromiseResolveBlo
 
 RCT_EXPORT_METHOD(getProductTags:(NSUInteger)page resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    
+
     [self.client getProductTagsPage:page completion:^(NSArray<NSString *> *tags, NSUInteger page, BOOL reachedEnd, NSError *error) {
         if (tags && !error) {
             resolve(tags);
@@ -66,7 +66,7 @@ RCT_EXPORT_METHOD(getProductTags:(NSUInteger)page resolver:(RCTPromiseResolveBlo
 
 RCT_EXPORT_METHOD(getProducts:(NSUInteger)page resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    
+
     [self.client getProductsPage:page completion:^(NSArray<BUYProduct *> *products, NSUInteger page, BOOL reachedEnd, NSError *error) {
         if (products && !error) {
             resolve([self getDictionariesForProducts:products]);
@@ -78,7 +78,7 @@ RCT_EXPORT_METHOD(getProducts:(NSUInteger)page resolver:(RCTPromiseResolveBlock)
 
 RCT_EXPORT_METHOD(getProductsWithTags:(NSUInteger)page tags:(NSArray<NSString *> *)tags resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    
+
     [self.client getProductsByTags:tags page:page completion:^(NSArray<BUYProduct *> *products, NSError *error) {
         if (products && !error) {
             resolve([self getDictionariesForProducts:products]);
@@ -90,9 +90,9 @@ RCT_EXPORT_METHOD(getProductsWithTags:(NSUInteger)page tags:(NSArray<NSString *>
 
 RCT_EXPORT_METHOD(getProductsWithTagsForCollection:(NSUInteger)page collectionId:(nonnull NSNumber *)collectionId tags:(NSArray<NSString *> *)tags resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    
+
     [self.client getProductsPage:page inCollection:collectionId withTags:tags sortOrder:BUYCollectionSortCollectionDefault completion:^(NSArray<BUYProduct *> *products, NSUInteger page, BOOL reachedEnd, NSError *error) {
-        
+
         if (products && !error) {
             resolve([self getDictionariesForProducts:products]);
         } else {
@@ -106,23 +106,23 @@ RCT_EXPORT_METHOD(checkout:(NSArray *)variants resolver:(RCTPromiseResolveBlock)
 {
     _resolve = resolve;
     _reject = reject;
-    
+
     BUYModelManager *modelManager = self.client.modelManager;
     BUYCart *cart = [modelManager insertCartWithJSONDictionary:nil];
-    
+
     for (NSDictionary *dictionary in variants) {
         BUYProductVariant *variant = [[BUYProductVariant alloc] initWithModelManager:modelManager
                                                                       JSONDictionary:dictionary];
         [cart addVariant:variant];
     }
-    
+
     BUYCheckout *checkout = [modelManager checkoutWithCart:cart];
-    
+
     [self.client createCheckout:checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error == nil && checkout) {
             BUYWebCheckoutPaymentProvider *webPaymentProvider = [[BUYWebCheckoutPaymentProvider alloc] initWithClient:self.client];
             webPaymentProvider.delegate = self;
-            
+
             [webPaymentProvider startCheckout:checkout];
         } else {
             reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
@@ -134,16 +134,14 @@ RCT_EXPORT_METHOD(checkout:(NSArray *)variants resolver:(RCTPromiseResolveBlock)
 
 - (void)paymentProvider:(id<BUYPaymentProvider>)provider wantsControllerPresented:(UIViewController *)controller
 {
-    UIViewController *rootViewController = [[
+    self.rootViewController = [[
                                              [UIApplication sharedApplication] keyWindow] rootViewController];
-    [rootViewController presentViewController:controller animated:YES completion:nil];
+    [self.rootViewController presentViewController:controller animated:YES completion:nil];
 }
 
 - (void)paymentProviderWantsControllerDismissed:(id <BUYPaymentProvider>)provider
 {
-    UIViewController *rootViewController = [[
-                                             [UIApplication sharedApplication] keyWindow] rootViewController];
-    [rootViewController dismissViewControllerAnimated:YES completion:nil];
+    [self.rootViewController dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)paymentProvider:(id<BUYPaymentProvider>)provider didFailCheckoutWithError:(NSError *)error
@@ -172,28 +170,28 @@ RCT_EXPORT_METHOD(checkout:(NSArray *)variants resolver:(RCTPromiseResolveBlock)
     NSMutableArray *result = [NSMutableArray array];
     for (BUYProduct *product in products) {
         NSMutableDictionary *productDictionary = [[product JSONDictionary] mutableCopy];
-        
+
         NSMutableArray *variants = [NSMutableArray array];
-        
+
         for (BUYProductVariant *variant in product.variants) {
             NSMutableDictionary *variantDictionary = [[variant JSONDictionary] mutableCopy];
-            
+
             NSMutableArray *options = [NSMutableArray array];
-            
+
             for (BUYOptionValue *option in variant.options) {
                 [options addObject: [option JSONDictionary]];
             }
-            
+
             variantDictionary[@"options"] = options;
-            
+
             [variants addObject: variantDictionary];
         }
-        
+
         productDictionary[@"variants"] = variants;
-        
+
         [result addObject: productDictionary];
     }
-    
+
     return result;
 }
 
