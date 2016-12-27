@@ -7,10 +7,10 @@
 
 ### Including Mobile-BUY-SDK
 
-Include the Shopify Mobile Buy SDK in your project to make it available to the bridge. 
-Follow the instructions on their Github page to get started. For example, 
-the recommended and easiest way for iOS is to install it as a Pod. This project will look 
-for headers in the Pods directory. 
+Include the Shopify Mobile Buy SDK in your project to make it available to the bridge.
+Follow the instructions on their Github page to get started. For example,
+the recommended and easiest way for iOS is to install it as a Pod. This project will look
+for headers in the Pods directory.
 
 ### Mostly automatic installation
 
@@ -29,7 +29,7 @@ for headers in the Pods directory.
 #### Android
 
 1. Open up `android/app/src/main/java/[...]/MainActivity.java`
-  - Add `import com.reactlibrary.RNShopifyPackage;` to the imports at the top of the file
+  - Add `import com.reactnativeshopify.RNShopifyPackage;` to the imports at the top of the file
   - Add `new RNShopifyPackage()` to the list returned by the `getPackages()` method
 2. Append the following lines to `android/settings.gradle`:
   	```
@@ -65,4 +65,4 @@ Shopify.getProducts().then(products => {
 	console.log(error);
 });
 ```
-  
+
