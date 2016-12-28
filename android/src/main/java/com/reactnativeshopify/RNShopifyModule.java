@@ -60,7 +60,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
       public void success(Shop shop) {
         try {
           promise.resolve(convertJsonToMap(new JSONObject(shop.toJsonString())));
-        } catch (Exception e) {
+        } catch (JSONException e) {
           promise.reject("", e);
         }
       }
@@ -81,12 +81,12 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         try {
           WritableArray array = new WritableNativeArray();
 
-          for(Collection collection: collections) {
+          for(Collection collection : collections) {
             array.pushMap(convertJsonToMap(new JSONObject(collection.toJsonString())));
           }
 
           promise.resolve(array);
-        } catch (Exception e) {
+        } catch (JSONException e) {
           promise.reject("", e);
         }
       }
@@ -106,7 +106,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
       public void success(List<String> tags) {
         WritableArray array = new WritableNativeArray();
 
-        for(String tag: tags) {
+        for(String tag : tags) {
           array.pushString(tag);
         }
 
@@ -128,7 +128,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
       public void success(List<Product> products) {
         try {
           promise.resolve(getProductsAsWritableArray(products));
-        } catch (Exception e) {
+        } catch (JSONException e) {
           promise.reject("", e);
         }
       }
@@ -148,7 +148,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
       public void success(List<Product> products) {
         try {
           promise.resolve(getProductsAsWritableArray(products));
-        } catch (Exception e) {
+        } catch (JSONException e) {
           promise.reject("", e);
         }
       }
@@ -170,7 +170,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
       public void success(List<Product> products) {
         try {
           promise.resolve(getProductsAsWritableArray(products));
-        } catch (Exception e) {
+        } catch (JSONException e) {
           promise.reject("", e);
         }
       }
@@ -184,7 +184,6 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void checkout(ReadableArray variants, final Promise promise) {
-
     Cart cart;
 
     try {
