@@ -94,13 +94,13 @@ RCT_EXPORT_METHOD(getProductsWithTagsForCollection:(NSUInteger)page collectionId
     }];
 }
 
-RCT_EXPORT_METHOD(webCheckout:(NSArray *)variants resolver:(RCTPromiseResolveBlock)resolve
+RCT_EXPORT_METHOD(webCheckout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
     _resolve = resolve;
     _reject = reject;
 
-    BUYCheckout *checkout = [self createCheckoutFromVariants:variants];
+    BUYCheckout *checkout = [self createCheckoutFromCart:cart];
 
     [self.client createCheckout:checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error) {
@@ -114,14 +114,15 @@ RCT_EXPORT_METHOD(webCheckout:(NSArray *)variants resolver:(RCTPromiseResolveBlo
     }];
 }
 
-RCT_EXPORT_METHOD(checkout:(NSArray *)variants resolver:(RCTPromiseResolveBlock)resolve
+RCT_EXPORT_METHOD(checkout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)resolve
                 rejecter:(RCTPromiseRejectBlock)reject)
 {
-    BUYCheckout *checkout = [self createCheckoutFromVariants:variants];
+    BUYCheckout *checkout = [self createCheckoutFromCart:cart];
 
     [self.client createCheckout:checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error) {
-            return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
+            return reject([NSString stringWithFormat: @"%lu", (long)error.code],
+                [self getJsonFromError:error], error);
         }
 
         self.checkout = checkout;
@@ -139,8 +140,8 @@ RCT_EXPORT_METHOD(setCustomerInformation:(NSString *)email address:(NSDictionary
 
     [self.client updateCheckout:self.checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error) {
-            NSString *errorText = [self getCheckoutError:error];
-            return reject([NSString stringWithFormat: @"%lu", (long)error.code], errorText, error);
+            return reject([NSString stringWithFormat: @"%lu", (long)error.code],
+                [self getJsonFromError:error], error);
         }
 
         self.checkout = checkout;
@@ -163,19 +164,17 @@ RCT_EXPORT_METHOD(getShippingRates:(RCTPromiseResolveBlock)resolve rejecter:(RCT
             NSMutableDictionary *shippingRateDictionary = [[shippingRate JSONDictionary] mutableCopy];
 
             if ([shippingRate.deliveryRange count]) {
-                NSInteger daysInBetweenFirst = 1 + [NSDate daysBetweenDate:[NSDate date] andDate:shippingRate.deliveryRange[0]];
-                NSInteger daysInBetweenLast = 1 + [NSDate daysBetweenDate:[NSDate date] andDate:[shippingRate.deliveryRange lastObject]];
+                double firstDateInMiliseconds = [shippingRate.deliveryRange[0] timeIntervalSince1970] * 1000;
+                double secondDateInMiliseconds = [[shippingRate.deliveryRange lastObject] timeIntervalSince1970] * 1000;
 
                 NSMutableArray *deliveryRange = [NSMutableArray array];
-                [deliveryRange addObject:[NSNumber numberWithInteger:daysInBetweenFirst]];
-                [deliveryRange addObject:[NSNumber numberWithInteger:daysInBetweenLast]];
+                [deliveryRange addObject:[NSNumber numberWithDouble:firstDateInMiliseconds]];
+                [deliveryRange addObject:[NSNumber numberWithDouble:secondDateInMiliseconds]];
 
                 shippingRateDictionary[@"deliveryRange"] = deliveryRange;
             }
-
             [result addObject: shippingRateDictionary];
         }
-
         resolve(result);
     }];
 }
@@ -203,18 +202,16 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
     creditCard.expiryMonth = cardDictionary[@"expiryMonth"];
     creditCard.expiryYear = cardDictionary[@"expiryYear"];
     creditCard.cvv = cardDictionary[@"cvv"];
-    creditCard.nameOnCard = cardDictionary[@"nameOnCard"];
+    creditCard.nameOnCard = [NSString stringWithFormat:@"%@ %@", cardDictionary[@"firstName"], cardDictionary[@"lastName"]];
 
     [self.client storeCreditCard:creditCard checkout:self.checkout completion:^(id<BUYPaymentToken> token, NSError *error) {
         if (error) {
-            NSString *errorText = [self getCheckoutError:error];
-            return reject(@"", errorText, error);
+            return reject(@"", [self getJsonFromError:error], error);
         }
 
         [self.client completeCheckoutWithToken:self.checkout.token paymentToken:token completion:^(BUYCheckout *returnedCheckout, NSError *error) {
             if (error) {
-                NSString *errorText = [self getCheckoutError:error];
-                return reject(@"", errorText, error);
+                return reject(@"", [self getJsonFromError:error], error);
             }
 
             self.checkout = returnedCheckout;
@@ -297,63 +294,27 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
     return result;
 }
 
-- (BUYCheckout *) createCheckoutFromVariants:(NSArray *)variants
+- (BUYCheckout *) createCheckoutFromCart:(NSArray *)cartItems
 {
     BUYModelManager *modelManager = self.client.modelManager;
     BUYCart *cart = [modelManager insertCartWithJSONDictionary:nil];
 
-    for (NSDictionary *dictionary in variants) {
-        BUYProductVariant *variant = [[BUYProductVariant alloc] initWithModelManager:modelManager                                                                  JSONDictionary:dictionary];
-        [cart addVariant:variant];
+    for (NSDictionary *cartItem in cartItems) {
+        BUYProductVariant *variant = [[BUYProductVariant alloc] initWithModelManager:modelManager JSONDictionary:cartItem[@"variant"]];
+        for(int i = 0; i < [cartItem[@"quantity"] integerValue]; i++) {
+            [cart addVariant:variant];
+        }
     }
 
     BUYCheckout *checkout = [modelManager checkoutWithCart:cart];
     return checkout;
 }
 
-/**
- * Parses checkout errors. Shopify doesn't have a standard error format.
- * It replicates the structure that was sent in the request so one needs to manually parse it.
- * This issue was reported here: https://github.com/Shopify/mobile-buy-sdk-ios/issues/22
- * This function was taken from a comment on this issue.
- * Although Shopify has helper methods for error parsing, they only support error with line items.
- * This method also transforms keys into user friendly labels, for example 'last_name' to 'Last name'
- */
-- (NSString *) getCheckoutError: (NSError *) error
+- (NSString *) getJsonFromError:(NSError *)error
 {
-    __block NSString *errorText = @"";
-    NSDictionary *checkout = error.userInfo[@"errors"][@"checkout"];
-    [checkout enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
-        if([obj isKindOfClass: [NSArray class]] && [obj count] > 0) {
-            NSString *keyLabel = [self getLabelForErrorKey: key];
-            errorText = [errorText stringByAppendingFormat:@"%@ %@\n", keyLabel,  obj[0][@"message"]];
-        } else if([obj isKindOfClass: [NSDictionary class]]){
-            [obj enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key2, id  _Nonnull obj2, BOOL * _Nonnull stop) {
-                NSString *keyLabel = [self getLabelForErrorKey: key];
-                NSString *key2Label = [self getLabelForErrorKey: key2];
-                if([obj2 isKindOfClass: [NSArray class]] && [obj2 count] > 0) {
-                    errorText = [errorText stringByAppendingFormat:@"%@ %@ %@\n", keyLabel, key2Label,  obj2[0][@"message"]];
-                }
-            }];
-        }
-    }];
-
-    return errorText;
-}
-
-- (NSString *) getLabelForErrorKey: (NSString *) key
-{
-    NSDictionary *dictionary = @{
-        @"billing_address": @"Billing address",
-        @"email": @"Email",
-        @"credit_card": @"Credit card",
-        @"last_name": @"last name",
-        @"payment_gateway": @"Payment gateway:",
-        @"shipping_address": @"Shipping address",
-        @"verification_value": @"verification value",
-    };
-
-   return dictionary[key] ? dictionary[key]: key;
+    NSError * err;
+    NSData * jsonData = [NSJSONSerialization dataWithJSONObject:error.userInfo options:0 error:&err];
+    return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
 
 @end

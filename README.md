@@ -44,17 +44,30 @@ for headers in the Pods directory.
 
 ## Usage
 ```javascript
-import RNShopify from 'react-native-shopify';
+import Shopify from 'react-native-shopify';
 
-RNShopify.initialize('yourshopifystore.myshopify.com', 'YOUR API KEY');
+Shopify.initialize('yourshopifystore.myshopify.com', 'YOUR API KEY');
 
 Shopify.getProducts().then(products => {
-	const variants = products.map(product => product.variants[0]);
-	return Shopify.checkout(variants);
+	const cart = [{item, variant, quantity}];
+	return Shopify.checkout(cart);
 }).then(message => {
 	console.log(message);
 }).catch(error => {
-	console.log(error);
+	console.log(error.message);
 });
 ```
 
+### What can you do with it?
+
+You can browse through all products or filter them by collection and tag. You can call native checkout
+methods for both iOS and Android. We support web checkout for iOS but we have yet to implement the
+handlers for order completion so you can clear the cart or redirect the user to another page.
+
+We implemented custom parsing for checkout errors to give your users
+friendly messages on what went wrong. You can find out which line items are unavailable due to
+not enough quantity and how many are remaining. You can also get feedback about which fields are invalid
+when entering customer and payment information. Feedback messages are available through
+the `message` property on the error object in checkout methods.
+
+All contributions are welcome!

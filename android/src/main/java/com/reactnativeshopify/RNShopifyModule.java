@@ -1,6 +1,7 @@
 
 package com.reactnativeshopify;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,8 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
 
   private final ReactApplicationContext reactContext;
   private BuyClient buyClient;
+  private Checkout checkout;
+  private List<ShippingRate> availableShippingRates;
 
   public RNShopifyModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -54,7 +57,6 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void getShop(final Promise promise) {
-
     buyClient.getShop(new Callback<Shop>() {
       @Override
       public void success(Shop shop) {
@@ -185,29 +187,143 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void checkout(ReadableArray variants, final Promise promise) {
+  public void checkout(ReadableArray cartItems, final Promise promise) {
     Cart cart;
 
     try {
       cart = new Cart();
-      JSONArray variantsArray = convertArrayToJson(variants);
+      for (int i = 0; i < cartItems.size(); i++) {
+        ReadableMap cartItem = cartItems.getMap(i);
+        ReadableMap variantDictionary = cartItem.getMap("variant");
+        int quantity = cartItem.getInt("quantity");
 
-      for (int i = 0; i < variantsArray.length(); i++) {
-        JSONObject value = variantsArray.getJSONObject(i);
-        cart.addVariant(fromVariantJson(value.toString()));
+        JSONObject variantAsJsonObject = convertMapToJson(variantDictionary);
+        ProductVariant variant = fromVariantJson(variantAsJsonObject.toString());
+
+        for(int j = 0; j < quantity; j++) {
+          cart.addVariant(variant);
+        }
       }
     } catch (JSONException e) {
       promise.reject("", e);
       return;
     }
 
-    Checkout checkout = new Checkout(cart);
+    checkout = new Checkout(cart);
 
     // Sync the checkout with Shopify
     buyClient.createCheckout(checkout, new Callback<Checkout>() {
+
       @Override
       public void success(Checkout checkout) {
-        //TODO: Implement native or web checkout
+        RNShopifyModule.this.checkout = checkout;
+        promise.resolve("Success");
+      }
+
+      @Override
+      public void failure(BuyClientError error) {
+        promise.reject("", error.getRetrofitErrorBody());
+      }
+    });
+  }
+
+  @ReactMethod
+  public void setCustomerInformation(String email, ReadableMap addressDictionary, final Promise promise) {
+    try {
+      String addressAsJson = convertMapToJson(addressDictionary).toString();
+      Address address = fromAddressJson(addressAsJson);
+      address.setLastName(addressDictionary.getString("lastName"));
+      address.setCountryCode(addressDictionary.getString("countryCode"));
+      checkout.setEmail(email);
+      checkout.setShippingAddress(address);
+      checkout.setBillingAddress(address);
+    } catch (JSONException e) {
+      promise.reject("", e);
+      return;
+    }
+
+    buyClient.updateCheckout(checkout, new Callback<Checkout>() {
+
+      @Override
+      public void success(Checkout checkout) {
+        RNShopifyModule.this.checkout = checkout;
+        promise.resolve("Success");
+      }
+
+      @Override
+      public void failure(BuyClientError error) {
+        promise.reject("", error.getRetrofitErrorBody());
+      }
+    });
+  }
+
+  @ReactMethod
+  public void getShippingRates(final Promise promise) {
+    buyClient.getShippingRates(checkout.getToken(), new Callback<List<ShippingRate>>() {
+
+      @Override
+      public void success(List<ShippingRate> shippingRates) {
+        RNShopifyModule.this.availableShippingRates = shippingRates;
+        try {
+          promise.resolve(getShippingRatesAsWritableArray(shippingRates));
+        } catch (JSONException e) {
+          promise.reject("", e);
+          return;
+        }
+      }
+
+      @Override
+      public void failure(BuyClientError error) {
+        promise.reject("", error.getRetrofitErrorBody());
+      }
+    });
+  }
+
+  @ReactMethod
+  public void selectShippingRate(int shippingRateIndex, final Promise promise) {
+    ShippingRate selectedShippingRate = availableShippingRates.get(shippingRateIndex);
+    checkout.setShippingRate(selectedShippingRate);
+
+    // Update the checkout with the shipping rate
+    buyClient.updateCheckout(checkout, new Callback<Checkout>() {
+        @Override
+        public void success(Checkout checkout) {
+          RNShopifyModule.this.checkout = checkout;
+          promise.resolve("Success");
+        }
+
+        @Override
+        public void failure(BuyClientError error) {
+          promise.reject("", error.getRetrofitErrorBody());
+        }
+    });
+  }
+
+  @ReactMethod
+  public void completeCheckout(ReadableMap cardDictionary, final Promise promise) {
+    CreditCard card = new CreditCard();
+    card.setNumber(cardDictionary.getString("number"));
+    card.setFirstName(cardDictionary.getString("firstName"));
+    card.setLastName(cardDictionary.getString("lastName"));
+    card.setMonth(cardDictionary.getString("expiryMonth"));
+    card.setYear(cardDictionary.getString("expiryYear"));
+    card.setVerificationValue(cardDictionary.getString("cvv"));
+
+    // Associate the credit card with the checkout
+    buyClient.storeCreditCard(card, checkout, new Callback<PaymentToken>() {
+      @Override
+      public void success(PaymentToken paymentToken) {
+        buyClient.completeCheckout(paymentToken, checkout.getToken(), new Callback<Checkout>() {
+          @Override
+          public void success(Checkout returnedCheckout) {
+            promise.resolve("Success");
+          }
+
+          @Override
+          public void failure(BuyClientError error) {
+            promise.reject("", error.getRetrofitErrorBody());
+          }
+        });
       }
 
       @Override
@@ -220,13 +336,33 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
   private WritableArray getProductsAsWritableArray(List<Product> products) throws JSONException {
     WritableArray array = new WritableNativeArray();
 
-    for(Product product : products) {
+    for (Product product : products) {
       WritableMap productMap = convertJsonToMap(new JSONObject(product.toJsonString()));
       productMap.putString("minimum_price", product.getMinimumPrice());
       array.pushMap(productMap);
     }
 
     return array;
+  }
+
+  private WritableArray getShippingRatesAsWritableArray(List<ShippingRate> shippingRates) throws JSONException {
+    WritableArray result = new WritableNativeArray();
+
+    for (ShippingRate shippingRate : shippingRates) {
+      WritableMap shippingRateMap = convertJsonToMap(new JSONObject(toJsonString(shippingRate)));
+
+      if(shippingRate.getDeliveryRangeDates() != null) {
+        WritableArray deliveryDatesInMiliseconds = new WritableNativeArray();
+
+        for(Date deliveryDate : shippingRate.getDeliveryRangeDates()) {
+          deliveryDatesInMiliseconds.pushDouble(deliveryDate.getTime());
+        }
+        shippingRateMap.putArray("deliveryDates", deliveryDatesInMiliseconds);
+      }
+      result.pushMap(shippingRateMap);
+    }
+
+    return result;
   }
 
   private Set<String> convertReadableArrayToSet(ReadableArray array) {
@@ -351,5 +487,13 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
 
   private ProductVariant fromVariantJson(String json) {
     return BuyClientUtils.createDefaultGson().fromJson(json, ProductVariant.class);
+  }
+
+  private Address fromAddressJson(String json) {
+    return BuyClientUtils.createDefaultGson().fromJson(json, Address.class);
+  }
+
+  private String toJsonString(Object object) {
+    return BuyClientUtils.createDefaultGson().toJson(object);
   }
 }
