@@ -1,4 +1,3 @@
-
 # react-native-shopify
 
 ## Getting started
@@ -32,14 +31,14 @@ for headers in the Pods directory.
   - Add `import com.reactnativeshopify.RNShopifyPackage;` to the imports at the top of the file
   - Add `new RNShopifyPackage()` to the list returned by the `getPackages()` method
 2. Append the following lines to `android/settings.gradle`:
-  	```
-  	include ':react-native-shopify'
-  	project(':react-native-shopify').projectDir = new File(rootProject.projectDir, 	'../node_modules/react-native-shopify/android')
-  	```
+      ```
+      include ':react-native-shopify'
+      project(':react-native-shopify').projectDir = new File(rootProject.projectDir, 	'../node_modules/react-native-shopify/android')
+      ```
 3. Insert the following lines inside the dependencies block in `android/app/build.gradle`:
-  	```
+      ```
       compile project(':react-native-shopify')
-  	```
+      ```
 
 
 ## Usage
@@ -49,12 +48,12 @@ import Shopify from 'react-native-shopify';
 Shopify.initialize('yourshopifystore.myshopify.com', 'YOUR API KEY');
 
 Shopify.getProducts().then(products => {
-	const cart = [{item, variant, quantity}];
-	return Shopify.checkout(cart);
+  const cart = [{item, variant, quantity}];
+  return Shopify.checkout(cart);
 }).then(message => {
-	console.log(message);
+  console.log(message);
 }).catch(error => {
-	console.log(error.message);
+  console.log(error.message);
 });
 ```
 
@@ -66,8 +65,8 @@ handlers for order completion so you can clear the cart or redirect the user to 
 
 We implemented custom parsing for checkout errors to give your users
 friendly messages on what went wrong. You can find out which line items are unavailable due to
-not enough quantity and how many are remaining. You can also get feedback about which fields are invalid
-when entering customer and payment information. Feedback messages are available through
-the `message` property on the error object in checkout methods.
+not enough quantity in stock and how many are remaining. You can also get feedback about which
+fields are invalid when entering customer and payment information. Feedback messages are available
+through the `message` property on the error object in checkout methods.
 
 All contributions are welcome!

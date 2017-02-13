@@ -1,4 +1,3 @@
-
 package com.reactnativeshopify;
 
 import java.util.Arrays;

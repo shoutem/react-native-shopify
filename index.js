@@ -1,4 +1,3 @@
-
 import { NativeModules } from 'react-native';
 import _ from 'lodash';
 
@@ -16,21 +15,21 @@ export default {
   },
   checkout: (cart) => {
     return RNShopify.checkout(cart)
-    .catch((error) => {
-      throw new Error(getCheckoutError(error.message, cart));
-    });
+      .catch((error) => {
+        throw new Error(getCheckoutError(error.message, cart));
+      });
   },
   setCustomerInformation: (email, customer) => {
     return RNShopify.setCustomerInformation(email, customer)
-    .catch((error) => {
-      throw new Error(getCheckoutError(error.message));
-    });
+      .catch((error) => {
+        throw new Error(getCheckoutError(error.message));
+      });
   },
   completeCheckout: (creditCard) => {
     return RNShopify.completeCheckout(creditCard)
-    .catch((error) => {
-      throw new Error(getCheckoutError(error.message));
-    });
+      .catch((error) => {
+        throw new Error(getCheckoutError(error.message));
+      });
   },
 };
 
@@ -46,7 +45,7 @@ export default {
  *  "message":"is not supported","options":{}}]}}}}
  *
  * Although Shopify has started to build helper methods for error parsing, there is still work
- * to be done there. Also, they are different for Android and SDK.
+ * to be done there. Also, they are different for iOS and Android SDK.
  *
  * This JavaScript method gives you a complete solution for catching all checkout errors for
  * both iOS and Android. It also transforms keys into user friendly labels, for example 'last_name'

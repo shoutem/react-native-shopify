@@ -1,4 +1,3 @@
-
 #import "RNShopify.h"
 #import "Buy.h"
 
@@ -40,13 +39,7 @@ RCT_EXPORT_METHOD(getCollections:(NSUInteger)page resolver:(RCTPromiseResolveBlo
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
 
-        NSMutableArray *collectionDictionaries = [NSMutableArray array];
-
-        for (BUYCollection *collection in collections) {
-            [collectionDictionaries addObject: @{@"title":collection.title,@"id":collection.identifier}];
-        }
-
-        resolve(collectionDictionaries);
+        resolve([self getDictionariesForCollections:collections]);
     }];
 }
 
@@ -126,7 +119,7 @@ RCT_EXPORT_METHOD(checkout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)reso
         }
 
         self.checkout = checkout;
-        resolve(@"Success");
+        resolve(@YES);
     }];
 }
 
@@ -145,7 +138,7 @@ RCT_EXPORT_METHOD(setCustomerInformation:(NSString *)email address:(NSDictionary
         }
 
         self.checkout = checkout;
-        resolve(@"Success");
+        resolve(@YES);
     }];
 }
 
@@ -190,7 +183,7 @@ RCT_EXPORT_METHOD(selectShippingRate:(NSUInteger)shippingRateIndex resolver:(RCT
         }
 
         self.checkout = checkout;
-        resolve(@"Success");
+        resolve(@YES);
     }];
 }
 
@@ -215,7 +208,7 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
             }
 
             self.checkout = returnedCheckout;
-            resolve(@"Success");
+            resolve(@YES);
         }];
     }];
 }
@@ -259,6 +252,20 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 }
 
 #pragma mark - Helpers -
+
+/**
+ *  We need this method to generate collection dictionaries manually because the JSONDictionary method
+ *  from the SDK crashes in certain cases. The issue has been reported and closed. It won't be resolved
+ *  in the near future. Check this link for details:  https://github.com/Shopify/mobile-buy-sdk-ios/issues/351
+ */
+- (NSArray *) getDictionariesForCollections:(NSArray<BUYCollection *> *)collections
+{
+    NSMutableArray *result = [NSMutableArray array];
+    for (BUYCollection *collection in collections) {
+        [result addObject: @{@"title":collection.title, @"id":collection.identifier}];
+    }
+    return result;
+}
 
 /**
  *  We need this method to add options for variants manually since the SDK's JSONDictionary method

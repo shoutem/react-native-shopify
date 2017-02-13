@@ -1,4 +1,3 @@
-
 package com.reactnativeshopify;
 
 import java.util.Date;
@@ -8,6 +7,9 @@ import java.util.Set;
 import java.util.Iterator;
 
 import org.json.*;
+
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -44,14 +46,13 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void initialize(String domain, String key) {
-
+  public void initialize(String domain, String key, final Promise promise) {
     //Application ID is always 8, as stated in official documentation from Shopify
     buyClient = new BuyClientBuilder()
     .shopDomain(domain)
     .apiKey(key)
     .appId("8")
-    .applicationName("com.reactnativeshopify")
+    .applicationName(getApplicationName())
     .build();
   }
 
@@ -89,7 +90,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
             array.pushMap(collectionDictionary);
           }
 
-          promise.resolve(array);
+        promise.resolve(array);
         } catch (JSONException e) {
           promise.reject("", e);
         }
@@ -217,7 +218,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
       @Override
       public void success(Checkout checkout) {
         RNShopifyModule.this.checkout = checkout;
-        promise.resolve("Success");
+        promise.resolve(true);
       }
 
       @Override
@@ -247,7 +248,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
       @Override
       public void success(Checkout checkout) {
         RNShopifyModule.this.checkout = checkout;
-        promise.resolve("Success");
+        promise.resolve(true);
       }
 
       @Override
@@ -289,7 +290,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         @Override
         public void success(Checkout checkout) {
           RNShopifyModule.this.checkout = checkout;
-          promise.resolve("Success");
+          promise.resolve(true);
         }
 
         @Override
@@ -316,7 +317,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         buyClient.completeCheckout(paymentToken, checkout.getToken(), new Callback<Checkout>() {
           @Override
           public void success(Checkout returnedCheckout) {
-            promise.resolve("Success");
+            promise.resolve(true);
           }
 
           @Override
@@ -455,32 +456,32 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         }
     }
     return object;
-}
+  }
 
   private JSONArray convertArrayToJson(ReadableArray readableArray) throws JSONException {
 
     JSONArray array = new JSONArray();
 
     for (int i = 0; i < readableArray.size(); i++) {
-      switch (readableArray.getType(i)) {
+        switch (readableArray.getType(i)) {
         case Null:
-          break;
+            break;
         case Boolean:
-          array.put(readableArray.getBoolean(i));
-          break;
+            array.put(readableArray.getBoolean(i));
+            break;
         case Number:
-          array.put(readableArray.getDouble(i));
-          break;
+            array.put(readableArray.getDouble(i));
+            break;
         case String:
-          array.put(readableArray.getString(i));
-          break;
+            array.put(readableArray.getString(i));
+            break;
         case Map:
-          array.put(convertMapToJson(readableArray.getMap(i)));
-          break;
+            array.put(convertMapToJson(readableArray.getMap(i)));
+            break;
         case Array:
-          array.put(convertArrayToJson(readableArray.getArray(i)));
-          break;
-      }
+            array.put(convertArrayToJson(readableArray.getArray(i)));
+            break;
+        }
     }
     return array;
   }
@@ -495,5 +496,12 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
 
   private String toJsonString(Object object) {
     return BuyClientUtils.createDefaultGson().toJson(object);
+  }
+
+  private String getApplicationName() {
+    Context context = this.reactContext.getApplicationContext();
+    ApplicationInfo applicationInfo = context.getApplicationInfo();
+    int stringId = applicationInfo.labelRes;
+    return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : context.getString(stringId);
   }
 }
