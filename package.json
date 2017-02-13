@@ -1,0 +1,17 @@
+{
+  "name": "react-native-shopify",
+  "version": "0.1.0",
+  "description": "React Native bridge for Shopify Mobile Buy SDK for iOS and Android",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "react-native"
+  ],
+  "author": "Shoutem",
+  "license": "BSD-3-Clause",
+  "peerDependencies": {
+    "react-native": "0.39.2"
+  }
+}
