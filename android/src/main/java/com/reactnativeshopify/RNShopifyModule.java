@@ -90,7 +90,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
             array.pushMap(collectionDictionary);
           }
 
-        promise.resolve(array);
+          promise.resolve(array);
         } catch (JSONException e) {
           promise.reject("", e);
         }
@@ -453,7 +453,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         case Array:
           object.put(key, convertArrayToJson(readableMap.getArray(key)));
           break;
-        }
+      }
     }
     return object;
   }
@@ -463,25 +463,25 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     JSONArray array = new JSONArray();
 
     for (int i = 0; i < readableArray.size(); i++) {
-        switch (readableArray.getType(i)) {
+      switch (readableArray.getType(i)) {
         case Null:
-            break;
+          break;
         case Boolean:
-            array.put(readableArray.getBoolean(i));
-            break;
+          array.put(readableArray.getBoolean(i));
+          break;
         case Number:
-            array.put(readableArray.getDouble(i));
-            break;
+          array.put(readableArray.getDouble(i));
+          break;
         case String:
-            array.put(readableArray.getString(i));
-            break;
+          array.put(readableArray.getString(i));
+          break;
         case Map:
-            array.put(convertMapToJson(readableArray.getMap(i)));
-            break;
+          array.put(convertMapToJson(readableArray.getMap(i)));
+          break;
         case Array:
-            array.put(convertArrayToJson(readableArray.getArray(i)));
-            break;
-        }
+          array.put(convertArrayToJson(readableArray.getArray(i)));
+          break;
+      }
     }
     return array;
   }
