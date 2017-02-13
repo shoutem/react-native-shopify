@@ -12,6 +12,6 @@
   "author": "Shoutem",
   "license": "BSD-3-Clause",
   "peerDependencies": {
-    "react-native": "0.39.2"
+    "react-native": ">=0.40.0"
   }
 }
