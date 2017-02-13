@@ -1,4 +1,4 @@
-#import "RCTBridgeModule.h"
+#import "<React/RCTBridgeModule.h>"
 #import "Buy.h"
 
 @interface RNShopify : UIViewController <RCTBridgeModule, BUYPaymentProviderDelegate>
