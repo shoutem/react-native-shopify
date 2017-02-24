@@ -7,7 +7,7 @@ const UNKNOWN_ERROR = 'There was an unknown error. Please contact our customer s
 
 export default {
   ...RNShopify,
-  getProducts: (page, collectionId, tags) => {
+  getProducts: (page = 1, collectionId, tags) => {
     if (collectionId) {
       return RNShopify.getProductsWithTagsForCollection(page, collectionId, tags);
     }
