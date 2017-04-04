@@ -319,6 +319,12 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 
 - (NSString *) getJsonFromError:(NSError *)error
 {
+    // If user info can't be parsed to JSON the dataWithJSONObject will throw an exception
+    // In this case, we default to localized description
+    if(![NSJSONSerialization isValidJSONObject:error.userInfo]){
+      return error.localizedDescription;
+    }
+
     NSError * err;
     NSData * jsonData = [NSJSONSerialization dataWithJSONObject:error.userInfo options:0 error:&err];
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
