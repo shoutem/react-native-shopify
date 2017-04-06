@@ -42,20 +42,166 @@ for headers in the Pods directory.
 
 
 ## Usage
+
+### Initialize the shop.
+
 ```javascript
 import Shopify from 'react-native-shopify';
 
 Shopify.initialize('yourshopifystore.myshopify.com', 'YOUR API KEY');
 
-Shopify.getProducts().then(products => {
-  const cart = [{item, variant, quantity}];
-  return Shopify.checkout(cart);
-}).then(message => {
-  console.log(message);
-}).catch(error => {
-  console.log(error.message);
-});
 ```
+
+### Fetch shop data, collections and tags
+
+```javascript
+
+Shopify.getShop().then(shop => {
+  // Save the shop somewhere and use it to display currency and other info
+  return getAllCollections();
+}).then(collections => {
+  // Do something with collections
+  return getAllTags();
+}).then(tags => {
+  // And tags...
+});
+
+// You shoud load collections and tags from Shopify recursively since each query is
+// limited to 25 results by the SDK. Here are some methods to help you out:
+
+const getAllCollections = (page = 1, allCollections = []) =>
+  Shopify.getCollections(page).then((collections) => {
+    if (_.size(collections)) {
+      return getAllCollections(page + 1, [...allCollections, ...collections]);
+    }
+    return allCollections;
+  });
+
+// The same goes for tags...
+
+const getAllTags = (page = 1, allTags = []) =>
+  Shopify.getProductTags(page).then((tags) => {
+    if (_.size(tags)) {
+      return getAllTags(page + 1, [...allTags, ...tags]);
+    }
+    return allTags;
+  });
+
+// At last, fetch the first page (25) of products:
+
+Shopify.getProducts().then(products => {
+  // Show products to your users
+});
+
+// You can also fetch products for a specific page and collection ID
+
+Shopify.getProducts(2, collectionId).then(products => {});
+
+```
+![Products](images/products-all.png)
+
+### Search products by tags
+
+```javascript
+
+Shopify.getProducts(1, collectionId, ['t-shirts']).then(products => {});
+
+```
+
+![Products by tag](images/products-tag.png)
+
+### Add products to cart and proceed to checkout
+
+A product has several variants. For example, a sweater in various sizes and colors. You add
+variants for products to the cart. A cart item is defined as a tuple of _item_, _variant_ and _quantity_.
+
+You can perform a native or web checkout. Contributions for Apple Pay are welcome! The steps below
+describe the native checkout flow.
+
+#### Add item to cart
+
+![Add to cart](images/add-to-cart.png)
+
+#### Proceed to checkout
+
+![Cart](images/cart.png)
+
+```javascript
+
+// Add the first variant of the first fetched product, times 2:
+Shopify.getProducts().then(products => {
+  const firstProduct = products[0];
+
+  // Note that you should set product and variant objects, not IDs.
+  // Also note that the key for product is item
+  const cartItem = {
+    item: firstProduct,
+    variant: firstProduct.variants[0],
+    quantity: 2,
+  };
+
+  const cart = [cartItem];
+
+  // Pass a clone of your cart because the SDK will mutate it
+  Shopify.checkout(_.cloneDeep(cart)).then(() => {
+    // We're ready to collect customer information
+  }).catch((error) => {
+    // You'll get a user friendly message here informing you exactly
+    // what's wrong with the checkout and which items are not available.
+    // The bridge parses native errors and constructs this message.
+    Alert.alert(
+      'Error with checkout',
+      error.message,
+    );
+  });
+});
+
+```
+
+### Collect customer information
+
+![Customer information form](images/customer-info.png)
+
+```javascript
+
+const email = 'customer@mycustomer.com';
+
+const addressInformation = {
+  // Use the same properties as described in Shopify's iOS and Android SDK documentation
+};
+
+Shopify.setCustomerInformation(email, addressInformation).then(() => {
+  // Fetch shipping rates
+  return Shopify.getShippingRates();
+}).then((shippingRates) => {
+  // Let the user choose a shipping rate
+  // Select a shipping rate by index - 0 for the first rate:
+  return Shopify.selectShippingRate(0);
+}).then(() => {
+  // You're ready to collect payment information
+});
+
+```
+
+### Collect payment information
+
+![Payment information form](images/payment-info.png)
+
+```javascript
+
+const creditCard = {
+  // Use the same fields as in Shopify's SDK documentation
+  // The only exception is that instead of nameOnCard you use firstName and lastName
+};
+
+Shopify.completeCheckout({ ...creditCard }).then(() => {
+  // Congratulations, you got a new customer!
+});
+
+```
+
+![Products](images/order-complete.png)
+
 
 ### What can you do with it?
 
