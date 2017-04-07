@@ -215,4 +215,23 @@ not enough quantity in stock and how many are remaining. You can also get feedba
 fields are invalid when entering customer and payment information. Feedback messages are available
 through the `message` property on the error object in checkout methods.
 
-All contributions are welcome!
+You can find live code examples in the [Shoutem Shopify extension](https://github.com/shoutem/extensions/tree/master/shoutem-shopify),
+where you can also find UI components for various screens you might need.
+
+Here's a sample application in action:
+
+![Products](images/demo.gif)
+
+*All contributions are welcome!*
+
+These are the things missing:
+
+* Finishing web checkout on iOS and implementing it for Android
+* Apple Pay
+* Customer API
+
+We published a two part article series on bridging in React Native. Read it if you need more information about working with bridge libraries.
+The [first part](https://medium.com/shoutem/top-lessons-we-learned-while-building-a-react-native-bridge-library-bd6485cc6212) talks
+about high level concepts. The [second part](https://medium.com/shoutem/ways-to-pass-objects-between-native-and-javascript-in-react-native-c3dcae7bf4f5)
+goes into details about working with native objects.
+
