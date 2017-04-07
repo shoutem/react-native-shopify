@@ -98,7 +98,7 @@ Shopify.getProducts().then(products => {
 Shopify.getProducts(2, collectionId).then(products => {});
 
 ```
-![Products](images/products-all.png)
+![Products](images/products.png)
 
 ### Search products by tags
 
