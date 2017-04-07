@@ -51,15 +51,21 @@ export default {
  * both iOS and Android. It also transforms keys into user friendly labels, for example 'last_name'
  * to 'Last name'.
  *
- * If the checkout error is a network or other non standard error, this method will return an
- * unknown error message.
+ * If the checkout error body is empty, this method will return an unknown error message.
+ * If the body can't be parsed, it'll return it as it is.
  */
 const getCheckoutError = (errorBody, cart) => {
   if (!errorBody) {
     return UNKNOWN_ERROR;
   }
 
-  const errorObject = JSON.parse(errorBody);
+  let errorObject;
+
+  try {
+    errorObject = JSON.parse(errorBody);
+  } catch (e) {
+    return errorBody;
+  }
 
   const checkoutErrors = errorObject.errors.checkout;
   // This method is only used for checkout erorrs
