@@ -98,7 +98,7 @@ Shopify.getProducts().then(products => {
 Shopify.getProducts(2, collectionId).then(products => {});
 
 ```
-![Products](images/products.png)
+![Products](docs/products.png)
 
 ### Search products by tags
 
@@ -108,7 +108,7 @@ Shopify.getProducts(1, collectionId, ['t-shirts']).then(products => {});
 
 ```
 
-![Products by tag](images/products-tag.png)
+![Products by tag](docs/products-tag.png)
 
 ### Add products to cart and proceed to checkout
 
@@ -120,11 +120,11 @@ describe the native checkout flow.
 
 #### Add item to cart
 
-![Add to cart](images/add-to-cart.png)
+![Add to cart](docs/add-to-cart.png)
 
 #### Proceed to checkout
 
-![Cart](images/cart.png)
+![Cart](docs/cart.png)
 
 ```javascript
 
@@ -160,7 +160,7 @@ Shopify.getProducts().then(products => {
 
 ### Collect customer information
 
-![Customer information form](images/customer-info.png)
+![Customer information form](docs/customer-info.png)
 
 ```javascript
 
@@ -185,7 +185,7 @@ Shopify.setCustomerInformation(email, addressInformation).then(() => {
 
 ### Collect payment information
 
-![Payment information form](images/payment-info.png)
+![Payment information form](docs/payment-info.png)
 
 ```javascript
 
@@ -200,7 +200,7 @@ Shopify.completeCheckout({ ...creditCard }).then(() => {
 
 ```
 
-![Products](images/order-complete.png)
+![Products](docs/order-complete.png)
 
 
 ### What can you do with it?
@@ -220,7 +220,7 @@ where you can also find UI components for various screens you might need.
 
 Here's a sample application in action:
 
-![Products](images/demo.gif)
+![Products](docs/demo.gif)
 
 *All contributions are welcome!*
 
