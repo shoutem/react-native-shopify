@@ -194,9 +194,9 @@ const creditCard = {
   // The only exception is that instead of nameOnCard you use firstName and lastName
 };
 
-Shopify.completeCheckout({ ...creditCard }).then((orderId) => {
+Shopify.completeCheckout({ ...creditCard }).then((order) => {
   // Congratulations, you got a new customer!
-  // You get back the id of the order that you just created
+  // You get back the order object created from the successful checkout
 });
 
 ```

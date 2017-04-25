@@ -208,7 +208,7 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
             }
 
             self.checkout = returnedCheckout;
-            resolve(self.checkout.order.identifier);
+            resolve([self.checkout.order JSONDictionary]);
         }];
     }];
 }
