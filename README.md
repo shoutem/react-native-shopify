@@ -194,8 +194,9 @@ const creditCard = {
   // The only exception is that instead of nameOnCard you use firstName and lastName
 };
 
-Shopify.completeCheckout({ ...creditCard }).then(() => {
+Shopify.completeCheckout({ ...creditCard }).then((order) => {
   // Congratulations, you got a new customer!
+  // You get back the order object created from the successful checkout
 });
 
 ```
@@ -234,4 +235,3 @@ We published a two part article series on bridging in React Native. Read it if y
 The [first part](https://medium.com/shoutem/top-lessons-we-learned-while-building-a-react-native-bridge-library-bd6485cc6212) talks
 about high level concepts. The [second part](https://medium.com/shoutem/ways-to-pass-objects-between-native-and-javascript-in-react-native-c3dcae7bf4f5)
 goes into details about working with native objects.
-
