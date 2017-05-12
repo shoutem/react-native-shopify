@@ -168,9 +168,9 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
   @ReactMethod
   public void getProductsWithTagsForCollection(int page, int collectionId, ReadableArray tags,
       final Promise promise) {
-      Set<String> tagSet = tags != null ? convertReadableArrayToSet(tags) : null;
+    Set<String> tagSet = tags != null ? convertReadableArrayToSet(tags) : null;
 
-      buyClient.getProducts(page, Long.valueOf(collectionId), tagSet, null,
+    buyClient.getProducts(page, Long.valueOf(collectionId), tagSet, null,
       new Callback<List<Product>>() {
 
       @Override
