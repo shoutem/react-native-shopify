@@ -319,7 +319,12 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         buyClient.completeCheckout(paymentToken, checkout.getToken(), new Callback<Checkout>() {
           @Override
           public void success(Checkout returnedCheckout) {
-            promise.resolve(convertJsonToMap(new JSONObject(returnedCheckout.getOrder().toJsonString())));
+            try {
+              promise.resolve(convertJsonToMap(new JSONObject(returnedCheckout.getOrder().toJsonString())));
+            } catch (JSONException e) {
+              promise.reject("", e);
+              return;
+            }
           }
 
           @Override
